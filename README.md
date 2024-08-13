@@ -1,3 +1,5 @@
+stopping on pg 106
+
 to build (in root of project)
 
 - cmake --preset default .

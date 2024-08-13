@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <sys/types.h>
 
 #include<libsdb/registers.hpp>
@@ -31,7 +32,9 @@ namespace sdb {
         public:
             ~process();
             static std::unique_ptr<process> launch(
-                    std::filesystem::path path, bool debug = true);
+                    std::filesystem::path path, 
+                    bool debug = true,
+                    std::optional<int> stdout_replacement = std::nullopt);
             static std::unique_ptr<process> attach(pid_t pid);
 
             void resume();
