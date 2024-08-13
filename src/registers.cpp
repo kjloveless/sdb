@@ -55,6 +55,7 @@ sdb::registers::value sdb::registers::read(const register_info& info) const {
     else {
         return from_bytes<byte128>(bytes + info.offset);
     }
+    // return NULL to silence compiler warning
     return NULL;
 }
 
