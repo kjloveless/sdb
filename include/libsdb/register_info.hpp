@@ -10,10 +10,9 @@
 
 namespace sdb {
     enum class register_id {
-#define DEFINE_REGISTER(name,dwarf_id,size,offset,type,format) name
-#include <libsdb/detail/registers.inc>
-#undef DEFINE_REGISTER
-
+        #define DEFINE_REGISTER(name,dwarf_id,size,offset,type,format) name
+        #include <libsdb/detail/registers.inc>
+        #undef DEFINE_REGISTER
     };
 
     enum class register_type {
