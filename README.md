@@ -1,3 +1,8 @@
+to build (in root of project)
+
+- cmake --preset default .
+- cmake --build build
+
 catch2 build instructions
 - git clone https://github.com/catchorg/Catch2.git
 - cd Catch2

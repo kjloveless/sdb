@@ -1,0 +1,13 @@
+{
+    "version": 2,
+    "configurePresets": [
+        {
+            "name": "default",
+            "inherits": "vcpkg",
+            "environment": {
+                "_comment": "change VCPKG_ROOT to point to your installation",
+                "VCPKG_ROOT": "/usr/lib/vcpkg"
+            }
+        }
+    ]
+}
