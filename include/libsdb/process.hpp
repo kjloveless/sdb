@@ -3,9 +3,11 @@
 
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <sys/types.h>
 
-#include<libsdb/registers.hpp>
+#include <libsdb/registers.hpp>
+#include <libsdb/types.hpp>
 
 namespace sdb {
     enum class process_state {
@@ -24,14 +26,16 @@ namespace sdb {
 
 
     class process {
-        process() = delete;
-        process(const process&) = delete;
-        process& operator=(const process&) = delete;
-
         public:
+            process() = delete;
+            process(const process&) = delete;
+            process& operator=(const process&) = delete;
+
             ~process();
             static std::unique_ptr<process> launch(
-                    std::filesystem::path path, bool debug = true);
+                    std::filesystem::path path, 
+                    bool debug = true,
+                    std::optional<int> stdout_replacement = std::nullopt);
             static std::unique_ptr<process> attach(pid_t pid);
 
             void resume();
@@ -42,12 +46,19 @@ namespace sdb {
             process_state state() const { return state_; }
 
             registers& get_registers() { return *registers_; }
-            const registers& get_register() const { return *registers_; }
+            const registers& get_registers() const { return *registers_; }
 
             void write_fprs(const user_fpregs_struct& fprs);
             void write_gprs(const user_regs_struct& gprs);
 
             void write_user_area(std::size_t offset, std::uint64_t data);
+
+            virt_addr get_pc() const {
+                return virt_addr{
+                    get_registers().read_by_id_as<std::uint64_t>(register_id::rip)
+                };
+            }
+
         private:
             process(pid_t pid, bool terminate_on_end, bool is_attached)
                 : pid_(pid), 

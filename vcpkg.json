@@ -1,6 +1,7 @@
 {
   "dependencies": [
+    "catch2",
     "readline",
-    "catch2"
+    "fmt"
   ]
 }
