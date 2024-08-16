@@ -7,6 +7,8 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <fstream>
+#include <elf.h>
+#include <regex>
 
 using namespace sdb;
 
@@ -23,6 +25,31 @@ namespace {
         auto index_of_last_parenthesis = data.rfind(')');
         auto index_of_status_indicator = index_of_last_parenthesis + 2;
         return data[index_of_status_indicator];
+    }
+
+    std::int64_t get_entry_point(std::filesystem::path path) {
+        std::ifstream elf_file(path);
+
+        Elf64_Ehdr header;
+        elf_file.read(reinterpret_cast<char*>(&header), sizeof(header));
+        return header.e_entry;
+    }
+
+    virt_addr get_load_address(pid_t pid, std::int64_t offset) {
+        std::ifstream maps("/proc/" + std::to_string(pid) + "/maps");
+
+        std::string data;
+        while (std::getline(maps, data)) {
+            std::regex map_regex (R"((\w+)-\w+ ..(.). (\w+))");
+            std::smatch groups;
+            std::regex_search(data, groups, map_regex);
+
+            if (groups[2] == 'x') {
+                auto low_range = std::stol(groups[1], nullptr, 16);
+                auto file_offset = std::stol(groups[3], nullptr, 16);
+                return virt_addr{ offset - file_offset + low_range };
+            }
+        }
     }
 }
 
@@ -263,4 +290,45 @@ TEST_CASE("Can iterate breakpoint sites", "[breakpoint]") {
         [addr = 42](auto& site) mutable {
             REQUIRE(site.address().addr() == addr++);
     });
+}
+
+TEST_CASE("Breakpoint on address works", "[breakpoint]") {
+    bool close_on_exec = false;
+    sdb::pipe channel(close_on_exec);
+
+    auto proc = process::launch("build/test/targets/hello_sdb", true,
+            channel.get_write());
+    channel.close_write();
+
+    auto offset = get_entry_point("build/test/targets/hello_sdb");
+    auto load_address = get_load_address(proc->pid(), offset);
+
+    proc->create_breakpoint_site(load_address).enable();
+    proc->resume();
+    auto reason = proc->wait_on_signal();
+
+    REQUIRE(reason.reason == process_state::stopped);
+    REQUIRE(reason.info == SIGTRAP);
+    REQUIRE(proc->get_pc() == load_address);
+
+    proc->resume();
+    reason = proc->wait_on_signal();
+
+    REQUIRE(reason.reason == process_state::exited);
+    REQUIRE(reason.info == 0);
+
+    auto data = channel.read();
+    REQUIRE(to_string_view(data) == "Hello, sdb!\n");
+}
+
+TEST_CASE("Can remove breakpoint sites", "[breakpoint]") {
+    auto proc = process::launch("build/test/targets/run_endlessly");
+
+    auto& site = proc->create_breakpoint_site(virt_addr{ 42 });
+    proc->create_breakpoint_site(virt_addr{ 43 });
+    REQUIRE(proc->breakpoint_sites().size() == 2);
+
+    proc->breakpoint_sites().remove_by_id(site.id());
+    proc->breakpoint_sites().remove_by_address(virt_addr{ 43 });
+    REQUIRE(proc->breakpoint_sites().empty());
 }
