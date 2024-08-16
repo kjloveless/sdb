@@ -43,6 +43,7 @@ namespace sdb {
 
             void resume();
             stop_reason wait_on_signal();
+            sdb::stop_reason step_instruction();
 
             pid_t pid() const { return pid_; }
 

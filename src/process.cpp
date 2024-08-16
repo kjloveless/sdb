@@ -17,6 +17,26 @@ namespace {
     }
 }
 
+sdb::stop_reason sdb::process::step_instruction() {
+    std::optional<breakpoint_site*> to_reenable;
+    auto pc = get_pc();
+    if (breakpoint_sites_.enabled_stoppoint_at_address(pc)) {
+        auto& bp = breakpoint_sites_.get_by_address(pc);
+        bp.disable();
+        to_reenable = &bp;
+    }
+
+    if (ptrace(PTRACE_SINGLESTEP, pid_, nullptr, nullptr) < 0) {
+        error::send_errno("Could not single step");
+    }
+    auto reason = wait_on_signal();
+
+    if (to_reenable) {
+        to_reenable.value()->enable();
+    }
+    return reason;
+}
+
 std::unique_ptr<sdb::process> sdb::process::launch(
     std::filesystem::path path, 
     bool debug,
