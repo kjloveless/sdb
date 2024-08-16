@@ -191,6 +191,8 @@ set <address>
         }
         catch (...) {}
         sdb::error::send("Invalid format");
+        // silence compiler warning
+        return NULL;
     }
 
     void handle_register_write(
@@ -240,7 +242,7 @@ set <address>
         auto command = args[1];
 
         if (is_prefix(command, "list")) {
-            if (process.breakpoint_sites.empty()) {
+            if (process.breakpoint_sites().empty()) {
                 fmt::print("No breakpoints set\n");
             }
             else {
@@ -266,7 +268,7 @@ set <address>
                 fmt::print(stderr,
                     "Breakpoint command expects address in "
                     "hexadecimal, prefixed with '0x'\n");
-                return
+                return;
             }
 
             process.create_breakpoint_site(
@@ -340,8 +342,10 @@ set <address>
         }
         // Passing program name
         else {
-            const char* program_path = argv[1];
-            return sdb::process::launch(program_path);
+            auto program_path = argv[1];
+            auto proc = sdb::process::launch(program_path);
+            fmt::print("Launched proces with PID {}\n", proc->pid());
+            return proc;
         }
     }
 

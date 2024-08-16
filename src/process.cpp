@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <optional>
+#include <sys/personality.h>
 
 namespace {
     void exit_with_perror(
@@ -29,6 +30,7 @@ std::unique_ptr<sdb::process> sdb::process::launch(
     }
 
     if (pid == 0) {
+        personality(ADDR_NO_RANDOMIZE);
         channel.close_read();
 
         if (stdout_replacement) {

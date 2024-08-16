@@ -18,7 +18,7 @@ sdb::breakpoint_site::breakpoint_site(
         id_ = get_next_id();
     }
 
-void sdb::breapoint_site::enable() {
+void sdb::breakpoint_site::enable() {
     if (is_enabled_) return;
 
     errno = 0;
