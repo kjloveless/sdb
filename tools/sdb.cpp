@@ -273,6 +273,7 @@ set <address>
 
             process.create_breakpoint_site(
                 sdb::virt_addr{ *address }).enable();
+            return;
         }
 
         auto id = to_integral<sdb::breakpoint_site::id_type>(args[2]);
