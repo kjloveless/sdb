@@ -6,6 +6,8 @@
 #include <sys/wait.h>
 #include <optional>
 #include <sys/personality.h>
+#include <sys/uio.h>
+#include <libsdb/bit.hpp>
 
 namespace {
     void exit_with_perror(
@@ -226,4 +228,41 @@ sdb::breakpoint_site& sdb::process::create_breakpoint_site(virt_addr address) {
     }
     return breakpoint_sites_.push(
         std::unique_ptr<breakpoint_site>(new breakpoint_site(*this, address)));
+}
+
+std::vector<std::byte> sdb::process::read_memory(
+    virt_addr address,
+    std::size_t amount) const {
+    std::vector<std::byte> ret(amount);
+
+    iovec local_desc{ ret.data(), ret.size() };
+    iovec remote_desc{ reinterpret_cast<void*>(address.addr()), amount };
+
+    if (process_vm_readV(pid_, &local_desc, /*liovcnt=*/1,
+            &remote_desc, /*riovcnt=*/1, /*flags=*/0) < 0) {
+        error::send_errno("Could not read process memory");
+    }
+    return ret;
+}
+
+void sdb::process::write_memory(
+    virt_addr address, span<const std::byte> data) {
+    std::size_t written = 0;
+    while (written < data.size()) {
+        auto remaining = data.size() - written;
+        std::uint64_t word;
+        if (remaining >= 8) {
+            word = from_bytes<std::uint64_t>(data.begin(), + written);
+        }
+        else {
+            auto read = read_memory(address + written, 8);
+            auto word_data = reinterpret_cast<char*>(&word);
+            std::memcpy(word_data, data.begin() + written, remaining);
+            std::memcpy(word_data + remaining, read.data() + remaining, 8 - remaining);
+        }
+        if (ptrace(PTRACE_POKEDATA, pid_, address + written, word) < 0) {
+            error::send_errno("Failed to write memory");
+        }
+        written += 8;
+    }
 }
