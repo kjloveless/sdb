@@ -1,7 +1,8 @@
 {
   "dependencies": [
     "catch2",
+    "fmt",
     "readline",
-    "fmt"
+    "zydis"
   ]
 }

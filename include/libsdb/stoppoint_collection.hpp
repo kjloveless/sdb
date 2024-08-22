@@ -23,8 +23,6 @@ namespace sdb {
             Stoppoint& get_by_address(virt_addr address);
             const Stoppoint& get_by_address(virt_addr address) const;
 
-            std::vector<Stoppoint*> get_in_region(virt_addr low, virt_addr high) const;
-
             void remove_by_id(typename Stoppoint::id_type id);
             void remove_by_address(virt_addr address);
 
@@ -35,6 +33,9 @@ namespace sdb {
 
             std::size_t size() const { return stoppoints_.size(); }
             bool empty() const { return stoppoints_.empty(); }
+
+            std::vector<Stoppoint*> get_in_region(
+                virt_addr low, virt_addr high) const;
 
         private:
             using points_t = std::vector<std::unique_ptr<Stoppoint>>;
@@ -164,6 +165,19 @@ namespace sdb {
         for (const auto& point : stoppoints_) {
             f(*point);
         }
+    }
+
+    template <class Stoppoint>
+    std::vector<Stoppoint*> stoppoint_collection<Stoppoint>::get_in_region(
+        virt_addr low, virt_addr high) const 
+    {
+        std::vector<Stoppoint*> ret;
+        for (auto& site : stoppoints_) {
+            if (site->in_range(low, high)) {
+                ret.push_back(&*site);
+            }
+        }
+        return ret;
     }
 }
 
