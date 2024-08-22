@@ -11,6 +11,7 @@
 #include <libsdb/types.hpp>
 #include <libsdb/breakpoint_site.hpp>
 #include <libsdb/stoppoint_collection.hpp>
+#include <libsdb/bit.hpp>
 
 namespace sdb {
     enum class process_state {
@@ -76,7 +77,7 @@ namespace sdb {
             }
 
             std::vector<std::byte> read_memory(
-                virt_addr address, std::size_t size amount) const;
+                virt_addr address, std::size_t amount) const;
             void write_memory(virt_addr address, span<const std::byte> data);
 
             template <class T>

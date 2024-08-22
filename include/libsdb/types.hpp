@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace {
+namespace sdb {
     template <class T>
     class span {
         public:
@@ -25,9 +25,7 @@ namespace {
             T* data_ = nullptr;
             std::size_t size_ = 0;
     };
-}
 
-namespace sdb {
     using byte64 = std::array<std::byte, 8>;
     using byte128 = std::array<std::byte, 16>;
     class virt_addr {

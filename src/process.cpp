@@ -238,7 +238,7 @@ std::vector<std::byte> sdb::process::read_memory(
     iovec local_desc{ ret.data(), ret.size() };
     iovec remote_desc{ reinterpret_cast<void*>(address.addr()), amount };
 
-    if (process_vm_readV(pid_, &local_desc, /*liovcnt=*/1,
+    if (process_vm_readv(pid_, &local_desc, /*liovcnt=*/1,
             &remote_desc, /*riovcnt=*/1, /*flags=*/0) < 0) {
         error::send_errno("Could not read process memory");
     }
@@ -252,7 +252,7 @@ void sdb::process::write_memory(
         auto remaining = data.size() - written;
         std::uint64_t word;
         if (remaining >= 8) {
-            word = from_bytes<std::uint64_t>(data.begin(), + written);
+            word = from_bytes<std::uint64_t>(data.begin() + written);
         }
         else {
             auto read = read_memory(address + written, 8);
