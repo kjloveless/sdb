@@ -1,5 +1,3 @@
-stopping on pg 178
-
 to build (in root of project)
 
 - cmake --preset default .
@@ -13,3 +11,11 @@ catch2 build instructions
 - cmake .. -DBUILD_TESTING=off
 - make -j $(nproc)
 - sudo make install
+
+fmt:
+debian - apt install libfmt-dev
+
+debian - apt install libreadline-dev
+
+zydis:
+debian - apt-get install libzydis-dev zydis-tools

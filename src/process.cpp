@@ -17,6 +17,33 @@ namespace {
             reinterpret_cast<std::byte*>(message.data()), message.size());
         exit(-1);
     }
+
+    std::uint64_t encode_hardware_stoppoint_mode(sdb::stoppoint_mode mode) {
+        switch (mode) {
+            case sdb::stoppoint_mode::write: return 0b01;
+            case sdb::stoppoint_mode::read_write: return 0b11;
+            case sdb::stoppoint_mode::execute: return 0b00;
+        }
+    }
+
+    std::uint64_t encode_hardware_stoppoint_size(std::size_t size) {
+        switch (size) {
+            case 1: return 0b00;
+            case 2: return 0b01;
+            case 4: return 0b11;
+            case 8: return 0b10;
+            default: sdb::error::send("Invalid stoppoint size");
+        }
+    }
+
+    int find_free_stoppoint_register(std::uint64_t control_register) {
+        for (auto i = 0; i < 4; ++i) {
+            if ((control_register & (0b11 << (i * 2))) == 0) {
+                return i;
+            }
+        }
+        sdb::error::send("No remaining hardware debug registers");
+    }
 }
 
 sdb::stop_reason sdb::process::step_instruction() {
@@ -221,13 +248,15 @@ void sdb::process::write_user_area(std::size_t offset, std::uint64_t data) {
     }
 }
 
-sdb::breakpoint_site& sdb::process::create_breakpoint_site(virt_addr address) {
+sdb::breakpoint_site& sdb::process::create_breakpoint_site(
+    virt_addr address, bool hardware, bool internal) 
+{
     if (breakpoint_sites_.contains_address(address)) {
         error::send("Breakpoint site already created at address " +
             std::to_string(address.addr()));
     }
-    return breakpoint_sites_.push(
-        std::unique_ptr<breakpoint_site>(new breakpoint_site(*this, address)));
+    return breakpoint_sites_.push(std::unique_ptr<breakpoint_site>(
+        new breakpoint_site(*this, address, hardware, internal)));
 }
 
 std::vector<std::byte> sdb::process::read_memory(
@@ -277,4 +306,39 @@ void sdb::process::write_memory(
         }
         written += 8;
     }
+}
+
+int sdb::process::set_hardware_breakpoint(
+    breakpoint_site::id_type id, virt_addr address)
+{
+    return set_hardware_stoppoint(address, stoppoint_mode::execute, 1);
+}
+
+int sdb::process::set_hardware_stoppoint(
+    virt_addr address, stoppoint_mode mode, std::size_t size)
+{
+    auto& regs = get_registers();
+    auto control = regs.read_by_id_as<std::uint64_t>(register_id::dr7);
+
+    int free_space = find_free_stoppoint_register(control);
+
+    auto id = static_cast<int>(register_id::dr0) + free_space;
+    regs.write_by_id(static_cast<register_id>(id), address.addr());
+
+    auto mode_flag = encode_hardware_stoppoint_mode(mode);
+    auto size_flag = encode_hardware_stoppoint_size(size);
+    
+    auto enable_bit = (1 << (free_space * 2));
+    auto mode_bits = (mode_flag << (free_space * 4 + 16));
+    auto size_bits = (size_flag << (free_space * 4 + 18));
+
+    auto clear_mask = (0b11 << (free_space * 2)) | 
+        (0b1111 << (free_space * 4 + 16));
+    auto mask = control & ~clear_mask;
+
+    masked |= enable_bit | mode_bits | size_bits;
+
+    regs.write_by_id(register_id::dr7, masked);
+
+    return free_space;
 }
