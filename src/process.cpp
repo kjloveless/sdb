@@ -334,11 +334,24 @@ int sdb::process::set_hardware_stoppoint(
 
     auto clear_mask = (0b11 << (free_space * 2)) | 
         (0b1111 << (free_space * 4 + 16));
-    auto mask = control & ~clear_mask;
+    auto masked = control & ~clear_mask;
 
     masked |= enable_bit | mode_bits | size_bits;
 
     regs.write_by_id(register_id::dr7, masked);
 
     return free_space;
+}
+
+void sdb::process::clear_hardware_stoppoint(int index) {
+    auto id = static_cast<int>(register_id::dr0) + index;
+    get_registers().write_by_id(static_cast<register_id>(id), 0);
+
+    auto control = get_registers().
+        read_by_id_as<std::uint64_t>(register_id::dr7);
+
+    auto clear_mask = (0b11 << (index * 2)) | (0b1111 << (index * 4 + 16));
+    auto masked = control & ~clear_mask;
+
+    get_registers().write_by_id(register_id::dr7, masked);
 }

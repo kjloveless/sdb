@@ -91,8 +91,10 @@ namespace sdb {
                 return from_bytes<T>(data.data());
             }
 
-            int set_hardware_stoppoint(
+            int set_hardware_breakpoint(
                 breakpoint_site::id_type, virt_addr address);
+
+            void clear_hardware_stoppoint(int index);
 
         private:
             process(pid_t pid, bool terminate_on_end, bool is_attached)
