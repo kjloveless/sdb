@@ -79,6 +79,15 @@ namespace sdb {
                 return breakpoint_sites_;
             }
 
+            watchpoint& create_watchpoint(
+                virt_addr address, stoppoint_mode mode, std::size_t size);
+            stoppoint_collection<watchpoint>& watchpoints() {
+                return watchpoints_;
+            }
+            const stoppoint_collection<watchpoint>& watchpoints() const {
+                return watchpoints_;
+            }
+
             std::vector<std::byte> read_memory(
                 virt_addr address, std::size_t amount) const;
             std::vector<std::byte> read_memory_without_traps(
@@ -96,6 +105,10 @@ namespace sdb {
 
             void clear_hardware_stoppoint(int index);
 
+            int set_watchpoint(
+                watchpoint::id_type id, virt_addr address,
+                stoppoint_mode mode, std::size_t size);
+
         private:
             process(pid_t pid, bool terminate_on_end, bool is_attached)
                 : pid_(pid), 
@@ -111,6 +124,7 @@ namespace sdb {
             bool is_attached_ = true;
             std::unique_ptr<registers> registers_;
             stoppoint_collection<breakpoint_site> breakpoint_sites_;
+            stoppoint_collection<watchpoint> watchpoints_;
 
             int set_hardware_stoppoint(
                 virt_addr address, stoppoint_mode mode, std::size_t size);

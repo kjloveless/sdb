@@ -259,6 +259,20 @@ sdb::breakpoint_site& sdb::process::create_breakpoint_site(
         new breakpoint_site(*this, address, hardware, internal)));
 }
 
+sdb::watchpoint&
+sdb::process::create_watchpoint(
+    virt_addr address, 
+    stoppoint_mode mode,
+    std::size_t size)
+{
+    if (watchpoints_.contains_address(address)) {
+        error::send("Watchpoint alreadt created at address " +
+            std::to_string(address.addr()));
+    }
+    return watchpoints_.push(std::unique_ptr<watchpoint>(
+        new watchpoint(*this, address, mode,size)));
+}
+
 std::vector<std::byte> sdb::process::read_memory(
     virt_addr address,
     std::size_t amount) const {
@@ -354,4 +368,11 @@ void sdb::process::clear_hardware_stoppoint(int index) {
     auto masked = control & ~clear_mask;
 
     get_registers().write_by_id(register_id::dr7, masked);
+}
+
+int sdb::process::set_watchpoint(
+    watchpoint::id_type id, virt_addr address,
+    stoppoint_mode mode, std::size_t size)
+{
+    return set_hardware_stoppoint(address, mode, size);
 }
