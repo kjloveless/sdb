@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstddef>
 
-#include <libsdb/type.hpp>
+#include <libsdb/types.hpp>
 
 namespace sdb {
     class process;

@@ -10,6 +10,7 @@
 #include <libsdb/registers.hpp>
 #include <libsdb/types.hpp>
 #include <libsdb/breakpoint_site.hpp>
+#include <libsdb/watchpoint.hpp>
 #include <libsdb/stoppoint_collection.hpp>
 #include <libsdb/bit.hpp>
 

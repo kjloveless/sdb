@@ -4,7 +4,7 @@
 
 namespace {
     auto get_next_id() {
-        static sdb::watchpoint::id_type = 0;
+        static sdb::watchpoint::id_type id = 0;
         return ++id;
     }
 }
