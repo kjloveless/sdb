@@ -1,4 +1,4 @@
-stopping on pg 178
+stopping on pg. 203
 
 to build (in root of project)
 
@@ -13,3 +13,11 @@ catch2 build instructions
 - cmake .. -DBUILD_TESTING=off
 - make -j $(nproc)
 - sudo make install
+
+fmt:
+debian - apt install libfmt-dev
+
+debian - apt install libreadline-dev
+
+zydis:
+debian - apt-get install libzydis-dev zydis-tools

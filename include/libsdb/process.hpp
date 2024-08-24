@@ -10,6 +10,7 @@
 #include <libsdb/registers.hpp>
 #include <libsdb/types.hpp>
 #include <libsdb/breakpoint_site.hpp>
+#include <libsdb/watchpoint.hpp>
 #include <libsdb/stoppoint_collection.hpp>
 #include <libsdb/bit.hpp>
 
@@ -67,13 +68,25 @@ namespace sdb {
                 get_registers().write_by_id(register_id::rip, address.addr());
             }
 
-            breakpoint_site& create_breakpoint_site(virt_addr address);
+            breakpoint_site& create_breakpoint_site(
+                virt_addr address,
+                bool hardware = false,
+                bool internal = false);
 
             stoppoint_collection<breakpoint_site>& breakpoint_sites() {
                 return breakpoint_sites_;
             }
             const stoppoint_collection<breakpoint_site>& breakpoint_sites() const {
                 return breakpoint_sites_;
+            }
+
+            watchpoint& create_watchpoint(
+                virt_addr address, stoppoint_mode mode, std::size_t size);
+            stoppoint_collection<watchpoint>& watchpoints() {
+                return watchpoints_;
+            }
+            const stoppoint_collection<watchpoint>& watchpoints() const {
+                return watchpoints_;
             }
 
             std::vector<std::byte> read_memory(
@@ -87,6 +100,15 @@ namespace sdb {
                 auto data = read_memory(address, sizeof(T));
                 return from_bytes<T>(data.data());
             }
+
+            int set_hardware_breakpoint(
+                breakpoint_site::id_type, virt_addr address);
+
+            void clear_hardware_stoppoint(int index);
+
+            int set_watchpoint(
+                watchpoint::id_type id, virt_addr address,
+                stoppoint_mode mode, std::size_t size);
 
         private:
             process(pid_t pid, bool terminate_on_end, bool is_attached)
@@ -103,6 +125,10 @@ namespace sdb {
             bool is_attached_ = true;
             std::unique_ptr<registers> registers_;
             stoppoint_collection<breakpoint_site> breakpoint_sites_;
+            stoppoint_collection<watchpoint> watchpoints_;
+
+            int set_hardware_stoppoint(
+                virt_addr address, stoppoint_mode mode, std::size_t size);
     };
 }
 
