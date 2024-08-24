@@ -2,11 +2,21 @@
 #include <libsdb/process.hpp>
 #include <libsdb/error.hpp>
 
+#include <utility>
+
 namespace {
     auto get_next_id() {
         static sdb::watchpoint::id_type id = 0;
         return ++id;
     }
+}
+
+void sdb::watchpoint::update_data() {
+    std::uint64_t new_data = 0;
+    auto read = process_->read_memory(address_, size_);
+
+    memcpy(&new_data, read.data(), size_);
+    previous_data_ = std::exchange(data_, new_data);
 }
 
 sdb::watchpoint::watchpoint(
@@ -19,6 +29,7 @@ sdb::watchpoint::watchpoint(
     }
 
     id_ = get_next_id();
+    update_data();
 }
 
 void sdb::watchpoint::enable() {
