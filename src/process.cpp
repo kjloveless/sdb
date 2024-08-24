@@ -426,7 +426,7 @@ sdb::process::get_current_hardware_stoppoint() const
 
     using ret = std::variant<sdb::breakpoint_site::id_type,
           sdb::watchpoint::id_type>;
-    if (breakpoint_sites().contains_address(addr)) {
+    if (breakpoint_sites_.contains_address(addr)) {
         auto site_id = breakpoint_sites_.get_by_address(addr).id();
         return ret{ std::in_place_index<0>, site_id };
     }
