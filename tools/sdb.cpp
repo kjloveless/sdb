@@ -50,6 +50,7 @@ disassemble     - Disassemble machine code to assembly
 register        - Commands for operating on registers
 step            - Step over a single instruction
 watchpoint      - Commands for operating on watchpoints
+exit            - Exit the debugger
 )";
         }
         else if (is_prefix(args[1], "register")) {
@@ -640,6 +641,9 @@ set <address> <write|rw|execute> <size>
         }
         else if (is_prefix(command, "watchpoint")) {
             handle_watchpoint_command(*process, args);
+        }
+        else if (is_prefix(command, "exit")) {
+            exit(1);
         }
         else {
             std::cerr << "Unknown command\n";
