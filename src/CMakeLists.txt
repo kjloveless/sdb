@@ -4,7 +4,8 @@ add_library(libsdb
     registers.cpp 
     breakpoint_site.cpp
     disassembler.cpp
-    watchpoint.cpp)
+    watchpoint.cpp
+    syscalls.cpp)
 target_link_libraries(libsdb PRIVATE Zydis::Zydis)
 add_library(sdb::libsdb ALIAS libsdb)
 
