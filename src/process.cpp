@@ -430,13 +430,13 @@ void sdb::process::augment_stop_reason(sdb::stop_reason& reason) {
             sys_info.id = regs.read_by_id_as<std::uint64_t>(
                 register_id::orig_rax);
 
-            std::array<register_id>, 6> args_regs = {
+            std::array<register_id, 6> arg_regs = {
                 register_id::rdi, register_id::rsi, register_id::rdx,
                 register_id::r10, register_id::r8, register_id::r9
             };
             for (auto i = 0; i < 6; ++i) {
                 sys_info.args[i] = regs.read_by_id_as<std::uint64_t>(
-                    args_regs[i]);
+                    arg_regs[i]);
             }
 
             expecting_syscall_exit_ = true;
@@ -488,11 +488,11 @@ sdb::process::get_current_hardware_stoppoint() const
     }
 }
 
-sdb::stop_reason sdb::reason::maybe_resume_from_syscall(
+sdb::stop_reason sdb::process::maybe_resume_from_syscall(
     const stop_reason& reason)
 {
     if (syscall_catch_policy_.get_mode() == syscall_catch_policy::mode::some) {
-        auto& to_catch = syscall_catch_policy_.to_get_catch();
+        auto& to_catch = syscall_catch_policy_.get_to_catch();
         auto found = std::find(
             begin(to_catch), end(to_catch), reason.syscall_info->id);
 
