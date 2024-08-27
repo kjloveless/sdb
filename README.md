@@ -1,5 +1,3 @@
-stopping on pg. 203
-
 to build (in root of project)
 
 - cmake --preset default .
