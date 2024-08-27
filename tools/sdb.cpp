@@ -706,6 +706,7 @@ syscall <list of syscall IDs or names>
         }
         else if (is_prefix(command, "exit")) {
             exit(1);
+        }
         else if (is_prefix(command, "catchpoint")) {
             handle_catchpoint_command(*process, args);
         }
