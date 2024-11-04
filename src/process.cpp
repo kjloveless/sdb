@@ -8,6 +8,7 @@
 #include <sys/personality.h>
 #include <sys/uio.h>
 #include <libsdb/bit.hpp>
+#include <unistd.h>
 
 namespace {
     void exit_with_perror(
@@ -23,6 +24,7 @@ namespace {
             case sdb::stoppoint_mode::write: return 0b01;
             case sdb::stoppoint_mode::read_write: return 0b11;
             case sdb::stoppoint_mode::execute: return 0b00;
+            default: sdb::error::send("Invalid stoppoint mode");
         }
     }
 
@@ -93,7 +95,6 @@ std::unique_ptr<sdb::process> sdb::process::launch(
         channel.close_read();
 
         if (stdout_replacement) {
-            close(STDOUT_FILENO);
             if (dup2(*stdout_replacement, STDOUT_FILENO) < 0) {
                 exit_with_perror(channel, "stdout replacement failed");
             }
@@ -115,7 +116,7 @@ std::unique_ptr<sdb::process> sdb::process::launch(
     if (data.size() > 0) {
         waitpid(pid, nullptr, 0);
         auto chars = reinterpret_cast<char*>(data.data());
-        error::send(std::string(chars, chars + data.size() + 1));
+        error::send(std::string(chars, chars + data.size()));
     }
 
     std::unique_ptr<sdb::process> proc (
@@ -303,16 +304,23 @@ sdb::process::create_watchpoint(
         new watchpoint(*this, address, mode,size)));
 }
 
-std::vector<std::byte> sdb::process::read_memory(
-    virt_addr address,
-    std::size_t amount) const {
+std::vector<std::byte> 
+sdb::process::read_memory(virt_addr address, std::size_t amount) const {
     std::vector<std::byte> ret(amount);
 
     iovec local_desc{ ret.data(), ret.size() };
-    iovec remote_desc{ reinterpret_cast<void*>(address.addr()), amount };
+    std::vector<iovec> remote_descs;
+    while (amount > 0) {
+        auto up_to_next_page = 0x1000 - (address.addr() & 0xfff);
+        auto chunk_size = std::min(amount, up_to_next_page);
+        remote_descs.push_back({ reinterpret_cast<void*>(address.addr()),
+                chunk_size });
+        amount -= chunk_size;
+        address += chunk_size;
+    }
 
     if (process_vm_readv(pid_, &local_desc, /*liovcnt=*/1,
-            &remote_desc, /*riovcnt=*/1, /*flags=*/0) < 0) {
+        remote_descs.data(), /*riovcnt=*/remote_descs.size(), /*flags=*/0) < 0) {
         error::send_errno("Could not read process memory");
     }
     return ret;
@@ -324,6 +332,7 @@ std::vector<std::byte> sdb::process::read_memory_without_traps(
     auto memory = read_memory(address, amount);
     auto sites = breakpoint_sites_.get_in_region(address, address + amount);
     for (auto site : sites) {
+        if (!site->is_enabled() or site->is_hardware()) continue;
         auto offset = site->address() - address.addr();
         memory[offset.addr()] = site->saved_data_;
     }

@@ -16,7 +16,7 @@
 
 namespace sdb {
     struct syscall_information {
-        std::uint8_t id;
+        std::uint16_t id;
         bool entry;
         union {
             std::array<std::uint64_t, 6> args;

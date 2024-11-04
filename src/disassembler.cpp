@@ -9,7 +9,7 @@ std::vector<sdb::disassembler::instruction> sdb::disassembler::disassemble(
     ret.reserve(n_instructions);
 
     if (!address) {
-        *address = process_->get_pc();
+        address.emplace(process_->get_pc());
     }
     auto code = process_->read_memory_without_traps(
         *address, n_instructions * 15);

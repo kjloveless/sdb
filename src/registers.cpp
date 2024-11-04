@@ -25,10 +25,7 @@ namespace {
                 }
             }
 
-            auto ret = to_byte128(t);
-            std::fill(as_bytes(ret) + sizeof(T),
-                as_bytes(ret) + info.size + 1, std::byte(0));
-            return ret;
+            return to_byte128(t);
         }
 }
 
@@ -41,6 +38,7 @@ sdb::registers::value sdb::registers::read(const register_info& info) const {
             case 2: return from_bytes<std::uint16_t>(bytes + info.offset);
             case 4: return from_bytes<std::uint32_t>(bytes + info.offset);
             case 8: return from_bytes<std::uint64_t>(bytes + info.offset);
+            default: sdb::error::send("Unexpected register size");
         }
     } 
     else if (info.format == register_format::double_float) {
@@ -66,7 +64,7 @@ void sdb::registers::write(const register_info& info, value val) {
         if (sizeof(v) <= info.size) {
             auto wide = widen(info, v);
             auto val_bytes = as_bytes(wide);
-            std::copy(val_bytes, val_bytes + sizeof(v), bytes + info.offset);
+            std::copy(val_bytes, val_bytes + info.size, bytes + info.offset);
         }
         else {
             std::cerr << "sdb::register::write called with "
